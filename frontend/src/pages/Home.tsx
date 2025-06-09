@@ -7,10 +7,12 @@ import {
   Button,
   Grid,
   Paper,
-  AppBar,
-  Toolbar,
+  IconButton,
 } from '@mui/material';
-import { VideoCall, People, ExitToApp } from '@mui/icons-material';
+import {
+  VideoCall,
+  Logout,
+} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
 const Home: React.FC = () => {
@@ -23,67 +25,59 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Video Call App
-          </Typography>
-          <Button color="inherit" onClick={handleLogout} startIcon={<ExitToApp />}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Welcome, {user?.username}!
+    <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="h6" component="div">
+          Video Call App
         </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            {user?.email}
+          </Typography>
+          <IconButton onClick={handleLogout} color="inherit">
+            <Logout />
+          </IconButton>
+        </Box>
+      </Box>
 
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flex: 1 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12}>
             <Paper
               sx={{
-                p: 3,
+                p: 4,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                cursor: 'pointer',
+                textAlign: 'center',
+                bgcolor: 'primary.main',
+                color: 'white',
+                borderRadius: 2,
               }}
-              onClick={() => navigate('/video-call')}
             >
-              <VideoCall sx={{ fontSize: 60, mb: 2 }} />
-              <Typography variant="h5" component="h2" gutterBottom>
-                Start Video Call
+              <Typography variant="h4" gutterBottom>
+                Chào mừng đến với Video Call App
               </Typography>
-              <Typography variant="body1" color="text.secondary" align="center">
-                Start a new video call with other users
+              <Typography variant="body1" sx={{ mb: 3 }}>
+                Bắt đầu cuộc gọi video với bạn bè và đồng nghiệp của bạn
               </Typography>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<VideoCall />}
+                onClick={() => navigate('/video-call')}
+                sx={{
+                  bgcolor: 'white',
+                  color: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'grey.100',
+                  },
+                }}
+              >
+                Bắt đầu cuộc gọi
+              </Button>
             </Paper>
           </Grid>
-
-          {user?.isAdmin && (
-            <Grid item xs={12} md={6}>
-              <Paper
-                sx={{
-                  p: 3,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate('/users')}
-              >
-                <People sx={{ fontSize: 60, mb: 2 }} />
-                <Typography variant="h5" component="h2" gutterBottom>
-                  Manage Users
-                </Typography>
-                <Typography variant="body1" color="text.secondary" align="center">
-                  Add, edit, or remove users from the system
-                </Typography>
-              </Paper>
-            </Grid>
-          )}
         </Grid>
       </Container>
     </Box>

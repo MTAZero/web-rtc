@@ -22,4 +22,8 @@ export default defineConfig({
       },
     },
   },
+  server: {
+    host: '0.0.0.0', // Cho phép truy cập từ bất kỳ địa chỉ IP nào
+    port: 5173, // Port mặc định của Vite
+  },
 })
