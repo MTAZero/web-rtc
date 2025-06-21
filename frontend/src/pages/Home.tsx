@@ -8,41 +8,89 @@ import {
   Grid,
   Paper,
   IconButton,
+  AppBar,
+  Toolbar,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import { VideoCall, Logout } from "@mui/icons-material";
+import { VideoCall, Logout, People, Menu as MenuIcon } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    handleMenuClose();
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <Box
-        sx={{
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Typography variant="h6" component="div">
-          Video Call App
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            {user?.email}
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Video Call App
           </Typography>
-          <IconButton onClick={handleLogout} color="inherit">
-            <Logout />
-          </IconButton>
-        </Box>
-      </Box>
+          
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
+              {user?.email}
+            </Typography>
+            
+            <IconButton
+              color="inherit"
+              onClick={handleMenuOpen}
+              sx={{ ml: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+            
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+            >
+              <MenuItem onClick={() => handleNavigate("/video-call")}>
+                <VideoCall sx={{ mr: 1 }} />
+                Video Call
+              </MenuItem>
+              {user?.isAdmin && (
+                <MenuItem onClick={() => handleNavigate("/users")}>
+                  <People sx={{ mr: 1 }} />
+                  Quản lý người dùng
+                </MenuItem>
+              )}
+              <MenuItem onClick={handleLogout}>
+                <Logout sx={{ mr: 1 }} />
+                Đăng xuất
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flex: 1 }}>
         <Grid container spacing={3}>

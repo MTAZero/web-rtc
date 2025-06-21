@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../utils/axios';
 import axios from 'axios';
 import {
   Container,
@@ -19,12 +20,12 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/auth/login', {
+      const response = await api.post('/auth/login', {
         email,
         password,
       });
-      const { token, user } = response.data;
-      login(token, user);
+      const { access_token, user } = response.data;
+      login(access_token, user);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || 'Đăng nhập thất bại');
