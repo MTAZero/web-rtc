@@ -188,7 +188,7 @@ const VideoCall: React.FC = () => {
   useEffect(() => {
     // Initialize socket connection
     const socket = io(
-      "https://69c5-2001-ee0-47c6-d3d0-c7b-8aae-1eb2-9cc3.ngrok-free.app/webrtc",
+      `${window.location.origin}/webrtc`,
       {
         transports: ["websocket"],
         reconnection: true,
