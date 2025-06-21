@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Box,
@@ -8,12 +8,9 @@ import {
   Grid,
   Paper,
   IconButton,
-} from '@mui/material';
-import {
-  VideoCall,
-  Logout,
-} from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+} from "@mui/material";
+import { VideoCall, Logout } from "@mui/icons-material";
+import { useAuth } from "../contexts/AuthContext";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -21,16 +18,23 @@ const Home: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
-    <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <Typography variant="h6" component="div">
           Video Call App
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Typography variant="body2" color="text.secondary">
             {user?.email}
           </Typography>
@@ -42,16 +46,16 @@ const Home: React.FC = () => {
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flex: 1 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Box sx={{ width: "100%" }}>
             <Paper
               sx={{
                 p: 4,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                bgcolor: 'primary.main',
-                color: 'white',
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+                bgcolor: "primary.main",
+                color: "white",
                 borderRadius: 2,
               }}
             >
@@ -65,23 +69,23 @@ const Home: React.FC = () => {
                 variant="contained"
                 size="large"
                 startIcon={<VideoCall />}
-                onClick={() => navigate('/video-call')}
+                onClick={() => navigate("/video-call")}
                 sx={{
-                  bgcolor: 'white',
-                  color: 'primary.main',
-                  '&:hover': {
-                    bgcolor: 'grey.100',
+                  bgcolor: "white",
+                  color: "primary.main",
+                  "&:hover": {
+                    bgcolor: "grey.100",
                   },
                 }}
               >
                 Bắt đầu cuộc gọi
               </Button>
             </Paper>
-          </Grid>
+          </Box>
         </Grid>
       </Container>
     </Box>
   );
 };
 
-export default Home; 
+export default Home;

@@ -25,8 +25,6 @@ import { ArrowBack, Add, Edit, Delete } from '@mui/icons-material';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 interface User {
   id: string;
   username: string;
@@ -52,7 +50,7 @@ const Users: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API_URL}/users`);
+      const response = await axios.get('/api/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -92,9 +90,9 @@ const Users: React.FC = () => {
     e.preventDefault();
     try {
       if (editingUser) {
-        await axios.patch(`${API_URL}/users/${editingUser.id}`, formData);
+        await axios.patch(`/api/users/${editingUser.id}`, formData);
       } else {
-        await axios.post(`${API_URL}/users`, formData);
+        await axios.post('/api/users', formData);
       }
       handleCloseDialog();
       fetchUsers();
@@ -106,7 +104,7 @@ const Users: React.FC = () => {
   const handleDelete = async (userId: string) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await axios.delete(`${API_URL}/users/${userId}`);
+        await axios.delete(`/api/users/${userId}`);
         fetchUsers();
       } catch (error) {
         console.error('Error deleting user:', error);

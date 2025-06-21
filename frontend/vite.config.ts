@@ -22,8 +22,20 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+  },
   server: {
     host: '0.0.0.0', // Cho phép truy cập từ bất kỳ địa chỉ IP nào
     port: 5173, // Port mặc định của Vite
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
 })

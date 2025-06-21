@@ -10,6 +10,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -22,10 +23,18 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await register(username, email, password);
+      await register({
+        username,
+        email,
+        password,
+      });
       navigate('/login');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'An error occurred');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Đăng ký thất bại');
+      } else {
+        setError('Có lỗi xảy ra khi đăng ký');
+      }
     }
   };
 

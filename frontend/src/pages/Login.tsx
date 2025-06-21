@@ -10,8 +10,6 @@ import {
   Alert,
 } from '@mui/material';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 const Login: React.FC = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
@@ -21,7 +19,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await axios.post('/api/auth/login', {
         email,
         password,
       });
