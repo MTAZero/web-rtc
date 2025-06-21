@@ -8,7 +8,13 @@ import {
   TextField,
   Button,
   Typography,
-  Paper,
+  Card,
+  CardContent,
+  Chip,
+  AppBar,
+  Toolbar,
+  Container,
+  Divider,
 } from "@mui/material";
 import {
   Mic,
@@ -16,6 +22,11 @@ import {
   Videocam,
   VideocamOff,
   CallEnd,
+  VideoCall as VideoCallIcon,
+  ArrowBack,
+  Wifi,
+  WifiOff,
+  Group,
 } from "@mui/icons-material";
 import { io, Socket } from "socket.io-client";
 
@@ -30,6 +41,7 @@ const VideoCall: React.FC = () => {
   const [isInitiator, setIsInitiator] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
   const [readyReceived, setReadyReceived] = useState(false);
+  const [isPeerConnected, setIsPeerConnected] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const peerVideoRef = useRef<HTMLVideoElement>(null);
@@ -109,9 +121,11 @@ const VideoCall: React.FC = () => {
       console.log("ICE connection state:", pc.iceConnectionState);
       if (pc.iceConnectionState === "connected") {
         console.log("ICE connection established!");
+        setIsPeerConnected(true);
       } else if (pc.iceConnectionState === "failed") {
         console.error("ICE connection failed");
         setError("Kết nối ICE thất bại. Vui lòng thử lại.");
+        setIsPeerConnected(false);
       }
     };
 
@@ -119,9 +133,11 @@ const VideoCall: React.FC = () => {
       console.log("Connection state:", pc.connectionState);
       if (pc.connectionState === "connected") {
         console.log("Peer connection established!");
+        setIsPeerConnected(true);
       } else if (pc.connectionState === "failed") {
         console.error("Peer connection failed");
         setError("Kết nối peer thất bại. Vui lòng thử lại.");
+        setIsPeerConnected(false);
       }
     };
 
@@ -446,90 +462,191 @@ const VideoCall: React.FC = () => {
 
   if (!isInCall) {
     return (
-      <Box
-        sx={{
-          height: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            maxWidth: 400,
-            width: "100%",
-            bgcolor: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(10px)",
-            borderRadius: "16px",
+      <Box sx={{ 
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      }}>
+        {/* Header */}
+        <AppBar 
+          position="static" 
+          sx={{ 
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
           }}
         >
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            sx={{ color: "#1a237e" }}
-          >
-            Video Chat
-          </Typography>
-          <TextField
-            fullWidth
-            label="Tên phòng"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value)}
-            placeholder="Nhập tên phòng"
-            variant="outlined"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": {
-                  borderColor: "#667eea",
-                },
-              },
-            }}
-          />
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleJoinRoom}
-            disabled={!isSocketConnected}
-            sx={{
-              bgcolor: "#667eea",
-              "&:hover": {
-                bgcolor: "#764ba2",
-              },
-              py: 1.5,
-              borderRadius: "8px",
-            }}
-          >
-            Tham gia
-          </Button>
-          {isInCall && !isInitiator && (
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => {
-                console.log("Manual ready emit to room:", roomIdRef.current);
-                socket?.emit("ready", { roomId: roomIdRef.current });
-              }}
-              sx={{
-                borderColor: "#667eea",
-                color: "#667eea",
-                "&:hover": {
-                  borderColor: "#764ba2",
-                  color: "#764ba2",
-                },
-              }}
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              onClick={() => navigate("/")}
+              sx={{ mr: 2 }}
             >
-              Test Ready Signal
-            </Button>
-          )}
-        </Paper>
+              <ArrowBack />
+            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+              <VideoCallIcon sx={{ mr: 1, fontSize: 28 }} />
+              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                Video Call
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Chip
+                icon={isSocketConnected ? <Wifi /> : <WifiOff />}
+                label={isSocketConnected ? "Đã kết nối" : "Đang kết nối..."}
+                color={isSocketConnected ? "success" : "warning"}
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        <Container maxWidth="sm" sx={{ mt: 8, mb: 4 }}>
+          <Card sx={{ 
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            overflow: 'visible'
+          }}>
+            <CardContent sx={{ p: 4, textAlign: 'center' }}>
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mx: 'auto',
+                  mb: 3,
+                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                }}
+              >
+                <VideoCallIcon sx={{ fontSize: 40, color: 'white' }} />
+              </Box>
+              
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1a237e' }}>
+                Tham gia cuộc gọi
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                Nhập tên phòng để bắt đầu cuộc gọi video với bạn bè
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="Tên phòng"
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                placeholder="Ví dụ: phong-hop-1"
+                variant="outlined"
+                sx={{
+                  mb: 3,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: '#667eea',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#667eea',
+                    },
+                  },
+                }}
+              />
+              
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleJoinRoom}
+                disabled={!isSocketConnected || !roomId.trim()}
+                startIcon={<Group />}
+                sx={{
+                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  borderRadius: 2,
+                  py: 1.5,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #5a6fd8, #6a4190)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
+                  },
+                  '&:disabled': {
+                    background: 'rgba(0, 0, 0, 0.12)',
+                    color: 'rgba(0, 0, 0, 0.38)',
+                    transform: 'none',
+                    boxShadow: 'none',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                {!isSocketConnected ? 'Đang kết nối...' : 'Tham gia phòng'}
+              </Button>
+
+              {isInCall && !isInitiator && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    console.log("Manual ready emit to room:", roomIdRef.current);
+                    socket?.emit("ready", { roomId: roomIdRef.current });
+                  }}
+                  sx={{
+                    mt: 2,
+                    borderColor: 'rgba(102, 126, 234, 0.3)',
+                    color: '#667eea',
+                    borderRadius: 2,
+                    py: 1.5,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    '&:hover': {
+                      borderColor: '#667eea',
+                      background: 'rgba(102, 126, 234, 0.05)',
+                    },
+                  }}
+                >
+                  Test Ready Signal
+                </Button>
+              )}
+
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  hoặc
+                </Typography>
+              </Divider>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setRoomId(`room-${Date.now()}`)}
+                sx={{
+                  borderColor: 'rgba(102, 126, 234, 0.3)',
+                  color: '#667eea',
+                  borderRadius: 2,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&:hover': {
+                    borderColor: '#667eea',
+                    background: 'rgba(102, 126, 234, 0.05)',
+                  },
+                }}
+              >
+                Tạo phòng mới
+              </Button>
+            </CardContent>
+          </Card>
+        </Container>
+
         <Snackbar
           open={!!error}
           autoHideDuration={6000}
@@ -544,14 +661,13 @@ const VideoCall: React.FC = () => {
   }
 
   return (
-    <Box
-      sx={{
-        position: "relative",
-        width: "100%",
-        height: "100vh",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      }}
-    >
+    <Box sx={{ 
+      position: "relative",
+      width: "100%",
+      height: "100vh",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    }}>
+      {/* Main Video */}
       <video
         ref={localVideoRef}
         autoPlay
@@ -561,77 +677,153 @@ const VideoCall: React.FC = () => {
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          borderRadius: "8px",
+          borderRadius: "0",
         }}
       />
+
+      {/* Peer Video */}
       <video
         ref={peerVideoRef}
         autoPlay
         playsInline
         style={{
           position: "absolute",
-          width: "200px",
-          height: "150px",
+          width: "280px",
+          height: "210px",
           right: "20px",
-          top: "10%",
+          top: "20px",
           objectFit: "cover",
-          borderRadius: "8px",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-          border: "2px solid white",
+          borderRadius: "16px",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+          border: "3px solid rgba(255, 255, 255, 0.8)",
+          background: "rgba(0, 0, 0, 0.1)",
         }}
       />
+
+      {/* Connection Status */}
       <Box
         sx={{
           position: "absolute",
-          bottom: "20px",
+          top: "20px",
+          left: "20px",
+          display: "flex",
+          gap: 1,
+        }}
+      >
+        <Chip
+          icon={isSocketConnected ? <Wifi /> : <WifiOff />}
+          label={isSocketConnected ? "Đã kết nối" : "Mất kết nối"}
+          color={isSocketConnected ? "success" : "error"}
+          size="small"
+          sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(10px)',
+            fontWeight: 600 
+          }}
+        />
+        {isPeerConnected && (
+          <Chip
+            icon={<VideoCallIcon />}
+            label="Đã kết nối peer"
+            color="success"
+            size="small"
+            sx={{ 
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              fontWeight: 600 
+            }}
+          />
+        )}
+      </Box>
+
+      {/* Room Info */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a237e' }}>
+          Phòng: {roomId}
+        </Typography>
+      </Box>
+
+      {/* Control Buttons */}
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: "40px",
           left: "50%",
           transform: "translateX(-50%)",
           display: "flex",
-          gap: 2,
-          bgcolor: "rgba(255, 255, 255, 0.1)",
-          backdropFilter: "blur(10px)",
-          padding: 2,
-          borderRadius: "50px",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+          gap: 3,
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(20px)',
+          padding: '16px 24px',
+          borderRadius: '50px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
         }}
       >
         <IconButton
           onClick={toggleMute}
           sx={{
             color: "white",
-            bgcolor: "rgba(255, 255, 255, 0.2)",
-            "&:hover": {
-              bgcolor: "rgba(255, 255, 255, 0.3)",
+            background: isMuted ? 'rgba(244, 67, 54, 0.8)' : 'rgba(255, 255, 255, 0.2)',
+            width: 56,
+            height: 56,
+            '&:hover': {
+              background: isMuted ? 'rgba(244, 67, 54, 1)' : 'rgba(255, 255, 255, 0.3)',
+              transform: 'scale(1.1)',
             },
+            transition: 'all 0.3s ease',
           }}
         >
           {isMuted ? <MicOff /> : <Mic />}
         </IconButton>
+
         <IconButton
           onClick={toggleVideo}
           sx={{
             color: "white",
-            bgcolor: "rgba(255, 255, 255, 0.2)",
-            "&:hover": {
-              bgcolor: "rgba(255, 255, 255, 0.3)",
+            background: isVideoOff ? 'rgba(244, 67, 54, 0.8)' : 'rgba(255, 255, 255, 0.2)',
+            width: 56,
+            height: 56,
+            '&:hover': {
+              background: isVideoOff ? 'rgba(244, 67, 54, 1)' : 'rgba(255, 255, 255, 0.3)',
+              transform: 'scale(1.1)',
             },
+            transition: 'all 0.3s ease',
           }}
         >
           {isVideoOff ? <VideocamOff /> : <Videocam />}
         </IconButton>
+
         <IconButton
           onClick={handleEndCall}
           sx={{
             color: "white",
-            bgcolor: "#ff4444",
-            "&:hover": {
-              bgcolor: "#cc0000",
+            background: 'linear-gradient(45deg, #ff4444, #cc0000)',
+            width: 64,
+            height: 64,
+            '&:hover': {
+              background: 'linear-gradient(45deg, #cc0000, #990000)',
+              transform: 'scale(1.1)',
             },
+            transition: 'all 0.3s ease',
           }}
         >
-          <CallEnd />
+          <CallEnd sx={{ fontSize: 28 }} />
         </IconButton>
       </Box>
+
       <Snackbar
         open={!!error}
         autoHideDuration={6000}
