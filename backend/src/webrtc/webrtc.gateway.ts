@@ -8,6 +8,14 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 
+interface ChatMessage {
+  roomId: string;
+  message: string;
+  senderId: string;
+  senderName?: string;
+  timestamp: number;
+}
+
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -23,6 +31,7 @@ export class WebRTCGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger = new Logger('WebRTCGateway');
   private rooms: Map<string, Set<string>> = new Map();
+  private userNames: Map<string, string> = new Map(); // Store user names by socket ID
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -47,6 +56,9 @@ export class WebRTCGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       }
     });
+    
+    // Remove user name
+    this.userNames.delete(client.id);
   }
 
   @SubscribeMessage('join-room')
@@ -130,6 +142,34 @@ export class WebRTCGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleIceCandidate(client: Socket, payload: any) {
     this.logger.log(`Client ${client.id} sending ICE candidate to room: ${payload.roomId}`);
     client.to(payload.roomId).emit('candidate', payload.candidate);
+  }
+
+  @SubscribeMessage('send-message')
+  handleSendMessage(client: Socket, payload: ChatMessage) {
+    this.logger.log(`Client ${client.id} sending message to room: ${payload.roomId}`);
+    
+    // Verify user is in the room
+    const room = this.rooms.get(payload.roomId);
+    if (!room || !room.has(client.id)) {
+      this.logger.warn(`Client ${client.id} not in room ${payload.roomId}`);
+      return;
+    }
+
+    // Create message object
+    const message: ChatMessage = {
+      roomId: payload.roomId,
+      message: payload.message,
+      senderId: client.id,
+      senderName: payload.senderName || `User ${client.id.slice(0, 8)}`,
+      timestamp: Date.now(),
+    };
+
+    // Store user name for future messages
+    this.userNames.set(client.id, message.senderName);
+
+    // Broadcast message to all clients in the room
+    this.server.to(payload.roomId).emit('message', message);
+    this.logger.log(`Message broadcasted to room ${payload.roomId}: ${message.message}`);
   }
 
   @SubscribeMessage('test')

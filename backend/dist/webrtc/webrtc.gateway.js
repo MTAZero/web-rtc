@@ -17,6 +17,7 @@ let WebRTCGateway = class WebRTCGateway {
     constructor() {
         this.logger = new common_1.Logger('WebRTCGateway');
         this.rooms = new Map();
+        this.userNames = new Map();
     }
     handleConnection(client) {
         this.logger.log(`Client connected: ${client.id}`);
@@ -39,6 +40,7 @@ let WebRTCGateway = class WebRTCGateway {
                 }
             }
         });
+        this.userNames.delete(client.id);
     }
     handleJoinRoom(client, roomId) {
         this.logger.log(`Client ${client.id} joining room: ${roomId}`);
@@ -100,6 +102,24 @@ let WebRTCGateway = class WebRTCGateway {
         this.logger.log(`Client ${client.id} sending ICE candidate to room: ${payload.roomId}`);
         client.to(payload.roomId).emit('candidate', payload.candidate);
     }
+    handleSendMessage(client, payload) {
+        this.logger.log(`Client ${client.id} sending message to room: ${payload.roomId}`);
+        const room = this.rooms.get(payload.roomId);
+        if (!room || !room.has(client.id)) {
+            this.logger.warn(`Client ${client.id} not in room ${payload.roomId}`);
+            return;
+        }
+        const message = {
+            roomId: payload.roomId,
+            message: payload.message,
+            senderId: client.id,
+            senderName: payload.senderName || `User ${client.id.slice(0, 8)}`,
+            timestamp: Date.now(),
+        };
+        this.userNames.set(client.id, message.senderName);
+        this.server.to(payload.roomId).emit('message', message);
+        this.logger.log(`Message broadcasted to room ${payload.roomId}: ${message.message}`);
+    }
     handleTest(client, message) {
         this.logger.log(`Test message from client ${client.id}: ${message}`);
         client.emit('test-response', `Server received: ${message}`);
@@ -140,6 +160,12 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
 ], WebRTCGateway.prototype, "handleIceCandidate", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('send-message'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", void 0)
+], WebRTCGateway.prototype, "handleSendMessage", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('test'),
     __metadata("design:type", Function),

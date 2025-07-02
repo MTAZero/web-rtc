@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VideoCall from './pages/VideoCall';
+import Chat from './pages/Chat';
 import Users from './pages/Users';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -18,6 +19,14 @@ function App() {
           element={
             <ProtectedRoute>
               <VideoCall />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat/:roomId"
+          element={
+            <ProtectedRoute>
+              <Chat />
             </ProtectedRoute>
           }
         />

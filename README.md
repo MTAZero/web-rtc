@@ -1,94 +1,150 @@
-# WebRTC Video Call Application
+# WebRTC Video Call App with Chat
 
-A real-time video call application built with WebRTC, NestJS, and React.
+Ứng dụng video call sử dụng WebRTC với chức năng chat message text theo room.
 
-## Features
+## Tính năng
 
-- User authentication (login/register)
-- Admin user management
-- Real-time video calls using WebRTC
-- Modern UI with Material-UI
-- Secure WebSocket communication
+### Video Call
+- Video call 1-1 sử dụng WebRTC
+- Tạo và tham gia phòng
+- Bật/tắt microphone và camera
+- Hiển thị trạng thái kết nối
+- Responsive design
 
-## Tech Stack
+### Chat Message
+- Chat text real-time trong phòng video call
+- Hiển thị tin nhắn với timestamp và tên người gửi
+- Badge hiển thị số tin nhắn chưa đọc
+- UI chat panel có thể toggle ẩn/hiện
+- Hỗ trợ gửi tin nhắn bằng Enter
+
+## Cấu trúc dự án
+
+```
+web-rtc/
+├── backend/                 # NestJS Backend
+│   ├── src/
+│   │   ├── webrtc/
+│   │   │   ├── webrtc.gateway.ts    # WebSocket + WebRTC logic
+│   │   │   └── webrtc.module.ts
+│   │   ├── auth/                   # Authentication
+│   │   ├── users/                  # User management
+│   │   └── main.ts
+│   └── package.json
+├── frontend/                # React Frontend
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Chat.tsx            # Chat component riêng biệt
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── pages/
+│   │   │   ├── VideoCall.tsx       # Video call + Chat integration
+│   │   │   ├── Login.tsx
+│   │   │   └── Register.tsx
+│   │   └── ...
+│   └── package.json
+└── README.md
+```
+
+## Cài đặt và chạy
 
 ### Backend
-- NestJS
-- MongoDB
-- WebSocket
-- JWT Authentication
-
-### Frontend
-- React with TypeScript
-- Vite
-- Material-UI
-- WebRTC
-- Socket.IO Client
-
-## Prerequisites
-
-- Node.js (v18 or later)
-- MongoDB
-- npm or yarn
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd web-rtc
-```
-
-2. Install backend dependencies:
 ```bash
 cd backend
 npm install
-```
-
-3. Install frontend dependencies:
-```bash
-cd frontend
-npm install
-```
-
-4. Create a `.env` file in the backend directory with the following variables:
-```
-MONGODB_URI=mongodb://localhost:27017/web-rtc
-JWT_SECRET=your-secret-key
-```
-
-## Running the Application
-
-1. Start the backend server:
-```bash
-cd backend
 npm run start:dev
 ```
 
-2. Start the frontend development server:
+### Frontend
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
 
-3. Open your browser and navigate to `http://localhost:5173`
+## Cách sử dụng
 
-## Usage
+### 1. **Video Call**
+- Nhập tên phòng hoặc tạo phòng mới
+- Click "Tham gia phòng"
+- Sử dụng controls: bật/tắt microphone, camera, kết thúc cuộc gọi
 
-1. Register a new account or log in with existing credentials
-2. As an admin user, you can manage other users
-3. Start a video call by clicking the "Start Video Call" button
-4. Share the room ID with other users to join the call
-5. Use the controls to mute/unmute audio, enable/disable video, or end the call
+### 2. **Chat Room (Màn hình riêng)**
+- **Từ Home page**: Nhập tên phòng chat và click "Tham gia chat"
+- **Từ Quick Actions**: Click nút "Chat" để vào phòng "general"
+- **Truy cập trực tiếp**: URL `/chat/room-name`
+- Hiển thị tên người dùng theo tài khoản đang đăng nhập
+- Tin nhắn real-time với timestamp và avatar
 
-## Contributing
+### 3. **Tính năng Chat**
+- **Real-time messaging**: Tin nhắn được gửi/nhận ngay lập tức
+- **User identification**: Hiển thị tên và avatar người gửi
+- **Date separators**: Phân chia tin nhắn theo ngày
+- **Auto-scroll**: Tự động scroll xuống tin nhắn mới
+- **Enter to send**: Gửi tin nhắn bằng Enter
+- **Connection status**: Hiển thị trạng thái kết nối
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Công nghệ sử dụng
 
-## License
+### Backend
+- **NestJS** - Framework Node.js
+- **Socket.IO** - Real-time communication
+- **WebRTC** - Peer-to-peer video/audio
+- **MongoDB** - Database
+- **JWT** - Authentication
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+### Frontend
+- **React** - UI framework
+- **TypeScript** - Type safety
+- **Material-UI** - UI components
+- **Socket.IO Client** - Real-time communication
+- **WebRTC API** - Browser APIs
+
+## API Events
+
+### WebSocket Events (Socket.IO)
+
+#### Video Call Events
+- `join-room` - Tham gia phòng
+- `ready` - Sẵn sàng kết nối WebRTC
+- `offer` - Gửi offer WebRTC
+- `answer` - Gửi answer WebRTC
+- `candidate` - Gửi ICE candidate
+
+#### Chat Events
+- `send-message` - Gửi tin nhắn chat
+- `message` - Nhận tin nhắn chat
+
+### Chat Message Format
+```typescript
+interface ChatMessage {
+  roomId: string;
+  message: string;
+  senderId: string;
+  senderName?: string;
+  timestamp: number;
+}
+```
+
+## Tính năng nổi bật
+
+### Chat Component
+- **Tách biệt**: Component Chat riêng biệt, có thể tái sử dụng
+- **Real-time**: Tin nhắn được gửi/nhận ngay lập tức
+- **UI/UX**: Giao diện đẹp, responsive, dễ sử dụng
+- **State Management**: Quản lý state độc lập
+- **Auto-scroll**: Tự động scroll xuống tin nhắn mới nhất
+
+### Video Call Integration
+- **Seamless**: Chat hoạt động song song với video call
+- **Room-based**: Chat theo room, chỉ users trong room mới nhận được
+- **User-friendly**: Badge hiển thị tin nhắn chưa đọc
+
+## Phát triển thêm
+
+Có thể mở rộng thêm các tính năng:
+- File sharing trong chat
+- Emoji support
+- Message history
+- Typing indicators
+- Read receipts
+- Group video calls (>2 users) 

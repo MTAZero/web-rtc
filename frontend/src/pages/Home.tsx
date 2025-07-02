@@ -12,6 +12,7 @@ import {
   Avatar,
   Chip,
   IconButton,
+  TextField,
 } from "@mui/material";
 import { 
   VideoCall, 
@@ -19,16 +20,26 @@ import {
   People, 
   AdminPanelSettings,
   Home as HomeIcon,
+  Chat as ChatIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [chatRoomId, setChatRoomId] = React.useState("");
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleJoinChat = () => {
+    if (!chatRoomId.trim()) {
+      alert("Vui lòng nhập tên phòng chat");
+      return;
+    }
+    navigate(`/chat/${chatRoomId.trim()}`);
   };
 
   return (
@@ -189,6 +200,97 @@ const Home: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Chat Card */}
+          <Card sx={{ 
+            flex: 1,
+            minWidth: 300,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            transition: 'transform 0.2s ease-in-out',
+            '&:hover': { transform: 'translateY(-8px)' }
+          }}>
+            <CardContent sx={{ p: 4, textAlign: 'center' }}>
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(45deg, #ff9800, #f57c00)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mx: 'auto',
+                  mb: 3,
+                  boxShadow: '0 8px 32px rgba(255, 152, 0, 0.3)',
+                }}
+              >
+                <ChatIcon sx={{ fontSize: 40, color: 'white' }} />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+                Chat Room
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Tham gia phòng chat để trò chuyện với bạn bè và đồng nghiệp. Hỗ trợ tin nhắn real-time.
+              </Typography>
+              <Box sx={{ mb: 3 }}>
+                <TextField
+                  fullWidth
+                  label="Tên phòng chat"
+                  value={chatRoomId}
+                  onChange={(e) => setChatRoomId(e.target.value)}
+                  placeholder="Ví dụ: general, team-1"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      '&:hover fieldset': {
+                        borderColor: '#ff9800',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#ff9800',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<ChatIcon />}
+                onClick={handleJoinChat}
+                disabled={!chatRoomId.trim()}
+                sx={{
+                  background: 'linear-gradient(45deg, #ff9800, #f57c00)',
+                  borderRadius: 2,
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: '0 8px 32px rgba(255, 152, 0, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #f57c00, #ef6c00)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 40px rgba(255, 152, 0, 0.4)',
+                  },
+                  '&:disabled': {
+                    background: 'rgba(0, 0, 0, 0.12)',
+                    color: 'rgba(0, 0, 0, 0.38)',
+                    transform: 'none',
+                    boxShadow: 'none',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                Tham gia chat
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* User Management Card (Admin Only) */}
           {user?.isAdmin && (
             <Card sx={{ 
@@ -289,6 +391,30 @@ const Home: React.FC = () => {
               }}
             >
               Video Call
+            </Button>
+            
+            <Button
+              variant="outlined"
+              startIcon={<ChatIcon />}
+              onClick={() => navigate("/chat/general")}
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                color: 'white',
+                borderRadius: 2,
+                px: 3,
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': {
+                  borderColor: 'white',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  transform: 'translateY(-2px)',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              Chat
             </Button>
             
             {user?.isAdmin && (
