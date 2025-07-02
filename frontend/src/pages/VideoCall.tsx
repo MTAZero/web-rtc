@@ -49,6 +49,7 @@ const VideoCall: React.FC = () => {
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const roomIdRef = useRef<string>("");
   const isInitiatorRef = useRef<boolean>(false);
+  const isPlayingRef = useRef<boolean>(false);
 
   const initializeMedia = async () => {
     try {
@@ -100,8 +101,29 @@ const VideoCall: React.FC = () => {
     );
     const pc = new RTCPeerConnection({
       iceServers: [
-        { urls: "stun:stun.services.mozilla.com" },
-        { urls: "stun:stun.l.google.com:19302" },
+        {
+          urls: "stun:stun.relay.metered.ca:80",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:80",
+          username: "699ac44ba6139f0908a61b65",
+          credential: "8CBckQXkMf5DRisC",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:80?transport=tcp",
+          username: "699ac44ba6139f0908a61b65",
+          credential: "8CBckQXkMf5DRisC",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:443",
+          username: "699ac44ba6139f0908a61b65",
+          credential: "8CBckQXkMf5DRisC",
+        },
+        {
+          urls: "turns:global.relay.metered.ca:443?transport=tcp",
+          username: "699ac44ba6139f0908a61b65",
+          credential: "8CBckQXkMf5DRisC",
+        },
       ],
     });
 
@@ -110,6 +132,17 @@ const VideoCall: React.FC = () => {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         console.log("Sending ICE candidate:", event.candidate);
+        
+        // Kiểm tra candidate type để debug TURN server
+        const candidateStr = event.candidate.candidate;
+        if (candidateStr.includes('host')) {
+          console.log('📍 Local candidate');
+        } else if (candidateStr.includes('srflx')) {
+          console.log('🌐 STUN candidate');
+        } else if (candidateStr.includes('relay')) {
+          console.log('🔄 TURN relay candidate - TURN server working!');
+        }
+        
         socket?.emit("candidate", {
           candidate: event.candidate,
           roomId: roomIdRef.current,
@@ -149,10 +182,32 @@ const VideoCall: React.FC = () => {
       if (event.streams && event.streams[0]) {
         console.log("Setting remote stream to peer video");
         if (peerVideoRef.current) {
-          peerVideoRef.current.srcObject = event.streams[0];
-          peerVideoRef.current.play().catch((err) => {
-            console.error("Error playing peer video:", err);
-          });
+          // Kiểm tra nếu video đang playing thì không set lại
+          if (peerVideoRef.current.srcObject !== event.streams[0]) {
+            peerVideoRef.current.srcObject = event.streams[0];
+            
+            // Chỉ play nếu chưa đang playing
+            if (!isPlayingRef.current) {
+              isPlayingRef.current = true;
+              
+              // Thêm delay nhỏ để tránh race condition
+              setTimeout(() => {
+                if (peerVideoRef.current && peerVideoRef.current.srcObject) {
+                  peerVideoRef.current.play().catch((err) => {
+                    // Chỉ log lỗi nếu không phải AbortError
+                    if (err.name !== 'AbortError') {
+                      console.error("Error playing peer video:", err);
+                    } else {
+                      console.log("Video play was interrupted, this is normal during reconnection");
+                    }
+                    isPlayingRef.current = false;
+                  }).then(() => {
+                    console.log("Peer video started playing successfully");
+                  });
+                }
+              }, 100);
+            }
+          }
         }
       } else {
         console.warn("No remote streams in track event");
@@ -289,7 +344,7 @@ const VideoCall: React.FC = () => {
       }
     });
 
-    socket.on("offer", (offer: RTCSessionDescriptionInit) => {
+    socket.on("offer", async (offer: RTCSessionDescriptionInit) => {
       console.log("Received offer:", offer);
       console.log("Current isInitiator:", isInitiatorRef.current);
       console.log("Socket ID:", socket.id);
@@ -297,30 +352,33 @@ const VideoCall: React.FC = () => {
         console.log("Non-initiator handling offer - creating peer connection");
         createPeerConnection();
         console.log("Peer connection created, setting remote description");
-        peerConnectionRef.current
-          ?.setRemoteDescription(new RTCSessionDescription(offer))
-          .then(() => {
-            console.log("Set remote description, creating answer");
-            return peerConnectionRef.current?.createAnswer();
-          })
-          .then((answer) => {
-            console.log("Created answer:", answer);
-            return peerConnectionRef.current?.setLocalDescription(answer);
-          })
-          .then(() => {
-            console.log(
-              "Set local description, sending answer:",
-              peerConnectionRef.current?.localDescription
-            );
-            socket?.emit("answer", {
-              answer: peerConnectionRef.current?.localDescription,
-              roomId: roomIdRef.current,
-            });
-          })
-          .catch((err) => {
-            console.error("Error handling offer:", err);
-            setError("Có lỗi xảy ra khi xử lý offer. Vui lòng thử lại.");
+
+        // Đảm bảo đã có stream local
+        if (!streamRef.current) {
+          await initializeMedia();
+        }
+
+        await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(offer));
+
+        // Add local tracks nếu chưa add
+        if (streamRef.current && peerConnectionRef.current?.getSenders().length === 0) {
+          streamRef.current.getTracks().forEach((track) => {
+            peerConnectionRef.current?.addTrack(track, streamRef.current!);
           });
+        }
+
+        const answer = await peerConnectionRef.current?.createAnswer();
+        if (answer) {
+          await peerConnectionRef.current?.setLocalDescription(answer);
+          console.log(
+            "Set local description, sending answer:",
+            peerConnectionRef.current?.localDescription
+          );
+          socket?.emit("answer", {
+            answer: peerConnectionRef.current?.localDescription,
+            roomId: roomIdRef.current,
+          });
+        }
       } else {
         console.log("Initiator received offer, ignoring");
       }
@@ -455,6 +513,13 @@ const VideoCall: React.FC = () => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
     }
+    
+    // Reset video state
+    if (peerVideoRef.current) {
+      peerVideoRef.current.srcObject = null;
+    }
+    isPlayingRef.current = false;
+    
     setIsInCall(false);
     setRoomId("");
     navigate("/");
