@@ -100,9 +100,44 @@ const VideoCall: React.FC = () => {
     );
     const pc = new RTCPeerConnection({
       iceServers: [
+        // STUN servers
         { urls: "stun:stun.services.mozilla.com" },
         { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+
+        // ExpressTurn TURN servers (comprehensive list)
+        {
+          urls: [
+            "turn:relay1.expressturn.com:80",
+            "turn:relay1.expressturn.com:443",
+            "turn:relay1.expressturn.com:3478",
+            "turn:relay2.expressturn.com:3478",
+            "turn:relay3.expressturn.com:3478",
+            "turn:relay4.expressturn.com:3478",
+            "turn:relay5.expressturn.com:3478",
+            "turn:relay6.expressturn.com:3478",
+            "turn:relay7.expressturn.com:3478",
+            "turn:relay8.expressturn.com:3478",
+            "turn:relay9.expressturn.com:3478",
+            "turn:relay10.expressturn.com:3478",
+            "turn:relay11.expressturn.com:3478",
+            "turn:relay12.expressturn.com:3478",
+            "turn:relay13.expressturn.com:3478",
+            "turn:relay14.expressturn.com:3478",
+            "turn:relay15.expressturn.com:3478",
+            "turn:relay16.expressturn.com:3478",
+            "turn:relay17.expressturn.com:3478",
+            "turn:global.expressturn.com:3478",
+          ],
+          username: "000000002066834392",
+          credential: "k78IYXzTuscOW57aYgAv+GstxSo=",
+        },
       ],
+      iceCandidatePoolSize: 10,
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require",
+      iceTransportPolicy: "all",
     });
 
     peerConnectionRef.current = pc;
@@ -110,23 +145,61 @@ const VideoCall: React.FC = () => {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         console.log("Sending ICE candidate:", event.candidate);
+        console.log("Candidate type:", event.candidate.type);
+        console.log("Candidate protocol:", event.candidate.protocol);
+        console.log("Candidate address:", event.candidate.address);
+        console.log("Candidate port:", event.candidate.port);
+
+        // Log relay candidates specifically
+        if (event.candidate.type === "relay") {
+          console.log("🎉 RELAY CANDIDATE FOUND:", event.candidate);
+        }
+
         socket?.emit("candidate", {
           candidate: event.candidate,
           roomId: roomIdRef.current,
         });
+      } else {
+        console.log("🎉 ICE gathering completed - no more candidates");
       }
     };
 
     pc.oniceconnectionstatechange = () => {
       console.log("ICE connection state:", pc.iceConnectionState);
       if (pc.iceConnectionState === "connected") {
-        console.log("ICE connection established!");
+        console.log("🎉 ICE connection established!");
         setIsPeerConnected(true);
+      } else if (pc.iceConnectionState === "checking") {
+        console.log("ICE connection checking...");
+      } else if (pc.iceConnectionState === "disconnected") {
+        console.log("❌ ICE connection disconnected");
+        setIsPeerConnected(false);
       } else if (pc.iceConnectionState === "failed") {
-        console.error("ICE connection failed");
+        console.error("❌ ICE connection failed");
         setError("Kết nối ICE thất bại. Vui lòng thử lại.");
         setIsPeerConnected(false);
       }
+    };
+
+    pc.onicegatheringstatechange = () => {
+      console.log("ICE gathering state:", pc.iceGatheringState);
+      if (pc.iceGatheringState === "complete") {
+        console.log("🎉 ICE gathering completed!");
+      } else if (pc.iceGatheringState === "gathering") {
+        console.log("ICE gathering in progress...");
+      } else if (pc.iceGatheringState === "new") {
+        console.log("ICE gathering starting...");
+      }
+    };
+
+    pc.onicecandidateerror = (event) => {
+      console.error("ICE candidate error:", {
+        url: event.url,
+        errorCode: event.errorCode,
+        errorText: event.errorText,
+        address: event.address,
+        port: event.port,
+      });
     };
 
     pc.onconnectionstatechange = () => {
@@ -203,15 +276,12 @@ const VideoCall: React.FC = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    const socket = io(
-      `${window.location.origin}/webrtc`,
-      {
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      }
-    );
+    const socket = io(`${window.location.origin}/webrtc`, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
 
     setSocket(socket);
 
@@ -462,18 +532,20 @@ const VideoCall: React.FC = () => {
 
   if (!isInCall) {
     return (
-      <Box sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      }}>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        }}
+      >
         {/* Header */}
-        <AppBar 
-          position="static" 
-          sx={{ 
-            background: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+        <AppBar
+          position="static"
+          sx={{
+            background: "rgba(255, 255, 255, 0.1)",
+            backdropFilter: "blur(10px)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
           }}
         >
           <Toolbar>
@@ -485,13 +557,13 @@ const VideoCall: React.FC = () => {
             >
               <ArrowBack />
             </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
               <VideoCallIcon sx={{ mr: 1, fontSize: 28 }} />
               <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
                 Video Call
               </Typography>
             </Box>
-            
+
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Chip
                 icon={isSocketConnected ? <Wifi /> : <WifiOff />}
@@ -505,33 +577,38 @@ const VideoCall: React.FC = () => {
         </AppBar>
 
         <Container maxWidth="sm" sx={{ mt: 8, mb: 4 }}>
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            overflow: 'visible'
-          }}>
-            <CardContent sx={{ p: 4, textAlign: 'center' }}>
+          <Card
+            sx={{
+              background: "rgba(255, 255, 255, 0.95)",
+              backdropFilter: "blur(10px)",
+              borderRadius: 3,
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              overflow: "visible",
+            }}
+          >
+            <CardContent sx={{ p: 4, textAlign: "center" }}>
               <Box
                 sx={{
                   width: 80,
                   height: 80,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mx: 'auto',
+                  borderRadius: "50%",
+                  background: "linear-gradient(45deg, #667eea, #764ba2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mx: "auto",
                   mb: 3,
-                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                  boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
                 }}
               >
-                <VideoCallIcon sx={{ fontSize: 40, color: 'white' }} />
+                <VideoCallIcon sx={{ fontSize: 40, color: "white" }} />
               </Box>
-              
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1a237e' }}>
+
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 700, mb: 1, color: "#1a237e" }}
+              >
                 Tham gia cuộc gọi
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -547,18 +624,18 @@ const VideoCall: React.FC = () => {
                 variant="outlined"
                 sx={{
                   mb: 3,
-                  '& .MuiOutlinedInput-root': {
+                  "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
-                    '&:hover fieldset': {
-                      borderColor: '#667eea',
+                    "&:hover fieldset": {
+                      borderColor: "#667eea",
                     },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#667eea',
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#667eea",
                     },
                   },
                 }}
               />
-              
+
               <Button
                 fullWidth
                 variant="contained"
@@ -566,28 +643,28 @@ const VideoCall: React.FC = () => {
                 disabled={!isSocketConnected || !roomId.trim()}
                 startIcon={<Group />}
                 sx={{
-                  background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                  background: "linear-gradient(45deg, #667eea, #764ba2)",
                   borderRadius: 2,
                   py: 1.5,
-                  fontSize: '1.1rem',
+                  fontSize: "1.1rem",
                   fontWeight: 600,
-                  textTransform: 'none',
-                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #5a6fd8, #6a4190)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
+                  textTransform: "none",
+                  boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
+                  "&:hover": {
+                    background: "linear-gradient(45deg, #5a6fd8, #6a4190)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 12px 40px rgba(102, 126, 234, 0.4)",
                   },
-                  '&:disabled': {
-                    background: 'rgba(0, 0, 0, 0.12)',
-                    color: 'rgba(0, 0, 0, 0.38)',
-                    transform: 'none',
-                    boxShadow: 'none',
+                  "&:disabled": {
+                    background: "rgba(0, 0, 0, 0.12)",
+                    color: "rgba(0, 0, 0, 0.38)",
+                    transform: "none",
+                    boxShadow: "none",
                   },
-                  transition: 'all 0.3s ease',
+                  transition: "all 0.3s ease",
                 }}
               >
-                {!isSocketConnected ? 'Đang kết nối...' : 'Tham gia phòng'}
+                {!isSocketConnected ? "Đang kết nối..." : "Tham gia phòng"}
               </Button>
 
               {isInCall && !isInitiator && (
@@ -595,21 +672,24 @@ const VideoCall: React.FC = () => {
                   fullWidth
                   variant="outlined"
                   onClick={() => {
-                    console.log("Manual ready emit to room:", roomIdRef.current);
+                    console.log(
+                      "Manual ready emit to room:",
+                      roomIdRef.current
+                    );
                     socket?.emit("ready", { roomId: roomIdRef.current });
                   }}
                   sx={{
                     mt: 2,
-                    borderColor: 'rgba(102, 126, 234, 0.3)',
-                    color: '#667eea',
+                    borderColor: "rgba(102, 126, 234, 0.3)",
+                    color: "#667eea",
                     borderRadius: 2,
                     py: 1.5,
-                    fontSize: '1rem',
+                    fontSize: "1rem",
                     fontWeight: 600,
-                    textTransform: 'none',
-                    '&:hover': {
-                      borderColor: '#667eea',
-                      background: 'rgba(102, 126, 234, 0.05)',
+                    textTransform: "none",
+                    "&:hover": {
+                      borderColor: "#667eea",
+                      background: "rgba(102, 126, 234, 0.05)",
                     },
                   }}
                 >
@@ -628,16 +708,16 @@ const VideoCall: React.FC = () => {
                 variant="outlined"
                 onClick={() => setRoomId(`room-${Date.now()}`)}
                 sx={{
-                  borderColor: 'rgba(102, 126, 234, 0.3)',
-                  color: '#667eea',
+                  borderColor: "rgba(102, 126, 234, 0.3)",
+                  color: "#667eea",
                   borderRadius: 2,
                   py: 1.5,
-                  fontSize: '1rem',
+                  fontSize: "1rem",
                   fontWeight: 600,
-                  textTransform: 'none',
-                  '&:hover': {
-                    borderColor: '#667eea',
-                    background: 'rgba(102, 126, 234, 0.05)',
+                  textTransform: "none",
+                  "&:hover": {
+                    borderColor: "#667eea",
+                    background: "rgba(102, 126, 234, 0.05)",
                   },
                 }}
               >
@@ -661,12 +741,14 @@ const VideoCall: React.FC = () => {
   }
 
   return (
-    <Box sx={{ 
-      position: "relative",
-      width: "100%",
-      height: "100vh",
-      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    }}>
+    <Box
+      sx={{
+        position: "relative",
+        width: "100%",
+        height: "100vh",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      }}
+    >
       {/* Main Video */}
       <video
         ref={localVideoRef}
@@ -715,10 +797,10 @@ const VideoCall: React.FC = () => {
           label={isSocketConnected ? "Đã kết nối" : "Mất kết nối"}
           color={isSocketConnected ? "success" : "error"}
           size="small"
-          sx={{ 
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(10px)',
-            fontWeight: 600 
+          sx={{
+            background: "rgba(255, 255, 255, 0.9)",
+            backdropFilter: "blur(10px)",
+            fontWeight: 600,
           }}
         />
         {isPeerConnected && (
@@ -727,10 +809,10 @@ const VideoCall: React.FC = () => {
             label="Đã kết nối peer"
             color="success"
             size="small"
-            sx={{ 
-              background: 'rgba(255, 255, 255, 0.9)',
-              backdropFilter: 'blur(10px)',
-              fontWeight: 600 
+            sx={{
+              background: "rgba(255, 255, 255, 0.9)",
+              backdropFilter: "blur(10px)",
+              fontWeight: 600,
             }}
           />
         )}
@@ -743,14 +825,14 @@ const VideoCall: React.FC = () => {
           top: "20px",
           left: "50%",
           transform: "translateX(-50%)",
-          background: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(10px)',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+          background: "rgba(255, 255, 255, 0.9)",
+          backdropFilter: "blur(10px)",
+          padding: "8px 16px",
+          borderRadius: "20px",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
         }}
       >
-        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a237e' }}>
+        <Typography variant="body2" sx={{ fontWeight: 600, color: "#1a237e" }}>
           Phòng: {roomId}
         </Typography>
       </Box>
@@ -764,26 +846,30 @@ const VideoCall: React.FC = () => {
           transform: "translateX(-50%)",
           display: "flex",
           gap: 3,
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          padding: '16px 24px',
-          borderRadius: '50px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          background: "rgba(255, 255, 255, 0.15)",
+          backdropFilter: "blur(20px)",
+          padding: "16px 24px",
+          borderRadius: "50px",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
         }}
       >
         <IconButton
           onClick={toggleMute}
           sx={{
             color: "white",
-            background: isMuted ? 'rgba(244, 67, 54, 0.8)' : 'rgba(255, 255, 255, 0.2)',
+            background: isMuted
+              ? "rgba(244, 67, 54, 0.8)"
+              : "rgba(255, 255, 255, 0.2)",
             width: 56,
             height: 56,
-            '&:hover': {
-              background: isMuted ? 'rgba(244, 67, 54, 1)' : 'rgba(255, 255, 255, 0.3)',
-              transform: 'scale(1.1)',
+            "&:hover": {
+              background: isMuted
+                ? "rgba(244, 67, 54, 1)"
+                : "rgba(255, 255, 255, 0.3)",
+              transform: "scale(1.1)",
             },
-            transition: 'all 0.3s ease',
+            transition: "all 0.3s ease",
           }}
         >
           {isMuted ? <MicOff /> : <Mic />}
@@ -793,14 +879,18 @@ const VideoCall: React.FC = () => {
           onClick={toggleVideo}
           sx={{
             color: "white",
-            background: isVideoOff ? 'rgba(244, 67, 54, 0.8)' : 'rgba(255, 255, 255, 0.2)',
+            background: isVideoOff
+              ? "rgba(244, 67, 54, 0.8)"
+              : "rgba(255, 255, 255, 0.2)",
             width: 56,
             height: 56,
-            '&:hover': {
-              background: isVideoOff ? 'rgba(244, 67, 54, 1)' : 'rgba(255, 255, 255, 0.3)',
-              transform: 'scale(1.1)',
+            "&:hover": {
+              background: isVideoOff
+                ? "rgba(244, 67, 54, 1)"
+                : "rgba(255, 255, 255, 0.3)",
+              transform: "scale(1.1)",
             },
-            transition: 'all 0.3s ease',
+            transition: "all 0.3s ease",
           }}
         >
           {isVideoOff ? <VideocamOff /> : <Videocam />}
@@ -810,14 +900,14 @@ const VideoCall: React.FC = () => {
           onClick={handleEndCall}
           sx={{
             color: "white",
-            background: 'linear-gradient(45deg, #ff4444, #cc0000)',
+            background: "linear-gradient(45deg, #ff4444, #cc0000)",
             width: 64,
             height: 64,
-            '&:hover': {
-              background: 'linear-gradient(45deg, #cc0000, #990000)',
-              transform: 'scale(1.1)',
+            "&:hover": {
+              background: "linear-gradient(45deg, #cc0000, #990000)",
+              transform: "scale(1.1)",
             },
-            transition: 'all 0.3s ease',
+            transition: "all 0.3s ease",
           }}
         >
           <CallEnd sx={{ fontSize: 28 }} />
